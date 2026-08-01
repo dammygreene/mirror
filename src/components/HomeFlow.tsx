@@ -35,8 +35,10 @@ export function HomeFlow() {
     youtube: Boolean(connectedData.youtube),
   };
 
-  async function runConnectFlow(source: MirrorSource) {
+  async function runConnectFlow(source: MirrorSource, approvalTab: Window | null) {
+    let approvalTabNavigated = false;
     try {
+      if (!approvalTab) throw new Error("approval tab was blocked");
       setError(undefined);
       setActiveSource(source);
       setState("creating");
@@ -49,7 +51,8 @@ export function HomeFlow() {
       if (!reqRes.ok) throw new Error(reqJson.error ?? "Failed to create request");
       if (!reqJson.requestId || !reqJson.approvalUrl) throw new Error("Vana did not return an approval URL");
 
-      window.open(reqJson.approvalUrl, "_blank", "noopener,noreferrer");
+      approvalTab.location.href = reqJson.approvalUrl;
+      approvalTabNavigated = true;
       setState("waiting");
 
       let readReady = false;
@@ -81,6 +84,7 @@ export function HomeFlow() {
       setConnectedData((current) => ({ ...current, [source]: readJson }));
       setState("idle");
     } catch (err) {
+      if (approvalTab && !approvalTabNavigated) approvalTab.close();
       setState("error");
       setError(flowError(err instanceof Error ? err.message : "Flow failed"));
     }
