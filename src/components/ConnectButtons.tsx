@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import type { MirrorSource } from "@/lib/vana/constants";
 
@@ -20,10 +21,12 @@ export function ConnectButtons({ onConnect, connected = {}, busySource, disabled
   return (
     <div className="ctaRow">
       <Button className="spotifyButton" onClick={() => onConnect("spotify", openApprovalTab())} disabled={disabled || busySource === "spotify"}>
-        {connected.spotify ? "Spotify connected" : "Connect Spotify"}
+        <Image className="buttonLogo" src="/spotify.png" alt="" width={22} height={22} unoptimized />
+        <span>{connected.spotify ? "Spotify connected" : "Connect Spotify"}</span>
       </Button>
       <Button className="youtubeButton" onClick={() => onConnect("youtube", openApprovalTab())} disabled={disabled || busySource === "youtube"}>
-        {connected.youtube ? "YouTube connected" : "Connect YouTube"}
+        <Image className="buttonLogo" src="/youtube.png" alt="" width={22} height={22} unoptimized />
+        <span>{connected.youtube ? "YouTube connected" : "Connect YouTube"}</span>
       </Button>
     </div>
   );
