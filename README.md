@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Mirror
 
 Mirror is a Vana Cup app that generates a shareable AI persona card from ChatGPT or Claude conversation history.
@@ -33,3 +34,6 @@ npm test
 npm run lint
 npm run build
 ```
+=======
+# mirror
+>>>>>>> 230a0b754cbceebcafdaaa643d0611402f0b4913
