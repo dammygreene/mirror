@@ -42,7 +42,7 @@ export default function Home() {
       </section>
 
       <footer className="footerNote">
-        <span>Powered by Vana - your data, your terms</span>
+        <span>Powered by Vana. Card generation uses the Google Gemini API under standard Google API terms.</span>
         <CupStandingWidget />
       </footer>
     </main>

@@ -64,10 +64,18 @@ const defaultStanding: CupStanding = {
 
 const dbPath = path.join(process.cwd(), ".mirror-store", "db.json");
 
-const redis =
-  process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
-    ? new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN })
-    : null;
+function getRedis() {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  if (!url.startsWith("https://")) {
+    console.warn("Ignoring invalid KV_REST_API_URL. Expected an Upstash REST URL starting with https://.");
+    return null;
+  }
+  return new Redis({ url, token });
+}
+
+const redis = getRedis();
 
 async function readLocal() {
   try {

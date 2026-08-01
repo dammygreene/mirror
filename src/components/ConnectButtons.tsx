@@ -9,10 +9,8 @@ type Props = {
 export function ConnectButtons({ onConnectChatgpt }: Props) {
   return (
     <div className="ctaRow">
-      <Button onClick={onConnectChatgpt}>Connect ChatGPT - 30 seconds</Button>
-      <Button href="/claude-upload" className="secondaryButton">
-        Connect Claude - ~5 min
-      </Button>
+      <Button onClick={onConnectChatgpt}>Connect ChatGPT</Button>
+      <Button href="/claude-upload">Connect Claude</Button>
     </div>
   );
 }

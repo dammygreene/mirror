@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generatePersona } from "@/lib/persona/generate";
+import { generatePersona, PersonaRateLimitError } from "@/lib/persona/generate";
 import { storeSession } from "@/lib/store/kv";
 
 const bodySchema = z.object({
@@ -22,10 +22,18 @@ export async function POST(req: Request) {
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
 
-  const persona = await generatePersona({
-    source: parsed.data.source,
-    conversations: parsed.data.conversations,
-  });
+  let persona;
+  try {
+    persona = await generatePersona({
+      source: parsed.data.source,
+      conversations: parsed.data.conversations,
+    });
+  } catch (error) {
+    if (error instanceof PersonaRateLimitError) {
+      return NextResponse.json({ error: "Persona generation is busy. Try again in a moment." }, { status: 429 });
+    }
+    throw error;
+  }
 
   await storeSession({
     sessionId: parsed.data.sessionId,

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { generatePersona } from "../src/lib/persona/generate";
 
 test("generatePersona returns valid fallback shape", async () => {
-  delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.GEMINI_API_KEY;
   const result = await generatePersona({
     source: "chatgpt",
     conversations: [

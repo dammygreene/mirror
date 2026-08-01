@@ -17,7 +17,7 @@ Copy the names from `.env.example` into your hosting provider's environment vari
 
 Required production integrations include:
 
-- `ANTHROPIC_API_KEY`
+- `GEMINI_API_KEY`
 - Vana app credentials
 - KV / Redis credentials for persistent production storage
 
