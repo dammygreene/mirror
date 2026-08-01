@@ -5,14 +5,25 @@ import { useRef } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { paletteAccent, paletteFile, paletteMuted, paletteText } from "@/lib/card/palette";
 import type { PersonaResult } from "@/lib/persona/types";
+import { cardSourceLabel, type MirrorCardSource } from "@/lib/vana/constants";
 
 type Props = {
   cardImageUrl?: string;
   persona?: PersonaResult | null;
-  source?: "chatgpt" | "claude";
+  source?: MirrorCardSource;
 };
 
-export function PersonaCard({ cardImageUrl, persona, source = "chatgpt" }: Props) {
+function sourceLogos(source: MirrorCardSource) {
+  if (source === "spotify-youtube") {
+    return [
+      { src: "/spotify.png", alt: "Spotify" },
+      { src: "/youtube.png", alt: "YouTube" },
+    ];
+  }
+  return source === "spotify" ? [{ src: "/spotify.png", alt: "Spotify" }] : [{ src: "/youtube.png", alt: "YouTube" }];
+}
+
+export function PersonaCard({ cardImageUrl, persona, source = "spotify" }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
@@ -77,7 +88,13 @@ export function PersonaCard({ cardImageUrl, persona, source = "chatgpt" }: Props
     >
       <div className="cardLiveContent">
         <p className="cardSource" style={{ color: accent, fontFamily: '"Space Grotesk", Arial, sans-serif' }}>
-          {source.toUpperCase()} READ
+          <span className="sourceMarks" aria-hidden="true">
+            {sourceLogos(source).map((logo) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={logo.alt} src={logo.src} alt="" width={18} height={18} />
+            ))}
+          </span>
+          {cardSourceLabel(source)} READ
         </p>
         <h2 className="revealText" style={{ color: text, fontFamily: '"Fraunces", Georgia, serif' }}>
           {persona.archetype}

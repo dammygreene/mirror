@@ -1,11 +1,12 @@
 ﻿import { Redis } from "@upstash/redis";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { MirrorCardSource } from "@/lib/vana/constants";
 
 type CardRecord = {
   cardId: string;
   sessionId: string;
-  source: "chatgpt" | "claude";
+  source: MirrorCardSource;
   createdAt: string;
   persona: unknown;
   svg: string;
@@ -14,8 +15,8 @@ type CardRecord = {
 
 type SessionRecord = {
   sessionId: string;
-  source: "chatgpt" | "claude";
-  conversations: unknown;
+  source: MirrorCardSource;
+  input: unknown;
   persona?: unknown;
   cardId?: string;
   referralCode?: string;

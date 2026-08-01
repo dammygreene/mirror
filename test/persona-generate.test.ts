@@ -5,13 +5,13 @@ import { generatePersona } from "../src/lib/persona/generate";
 test("generatePersona returns valid fallback shape", async () => {
   delete process.env.GEMINI_API_KEY;
   const result = await generatePersona({
-    source: "chatgpt",
-    conversations: [
-      {
-        id: "a",
-        messages: [{ role: "user", text: "help me debug this deploy" }],
-      },
-    ],
+    sources: ["spotify", "youtube"],
+    spotify: {
+      savedTracks: [{ title: "Night Drive", artist: "Ari Lennox", genre: "r&b" }],
+    },
+    youtube: {
+      history: [{ title: "Why analog synths are back", channel: "Sound Field", category: "music" }],
+    },
   });
 
   assert.ok(result.archetype.length > 0);

@@ -3,13 +3,13 @@ import type { DirectDataController } from "@opendatalabs/vana-sdk/server";
 import { SOURCES, type MirrorSource } from "./constants";
 
 const sourceConfig = {
-  chatgpt: {
-    connectorSource: process.env.VANA_CHATGPT_CONNECTOR_SOURCE ?? "chatgpt",
-    scopes: [SOURCES.chatgpt],
+  spotify: {
+    connectorSource: process.env.VANA_SPOTIFY_CONNECTOR_SOURCE ?? "spotify",
+    scopes: [SOURCES.spotify],
   },
-  claude: {
-    connectorSource: process.env.VANA_CLAUDE_CONNECTOR_SOURCE ?? "claude-export-playwright",
-    scopes: [SOURCES.claude],
+  youtube: {
+    connectorSource: process.env.VANA_YOUTUBE_CONNECTOR_SOURCE ?? "youtube",
+    scopes: [SOURCES.youtube],
   },
 } satisfies Record<MirrorSource, { connectorSource: string; scopes: string[] }>;
 

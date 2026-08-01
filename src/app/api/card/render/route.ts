@@ -5,7 +5,7 @@ import { creditReferral, storeCard, getSession, storeSession } from "@/lib/store
 
 const bodySchema = z.object({
   sessionId: z.string(),
-  source: z.enum(["chatgpt", "claude"]),
+  source: z.enum(["spotify", "youtube", "spotify-youtube"]),
   persona: z.object({
     archetype: z.string(),
     tagline: z.string(),

@@ -1,11 +1,17 @@
 ﻿import { paletteAccent, paletteMuted, paletteText } from "./palette";
 import type { PersonaResult } from "@/lib/persona/types";
+import { cardSourceLabel, type MirrorCardSource } from "@/lib/vana/constants";
 
 const W = 1080;
 const H = 1350;
 const CARD_RADIUS = 52;
 const TEXT_X = 130;
 const CONTENT_W = 820;
+
+export type CardLogoData = {
+  href: string;
+  label: string;
+};
 
 function esc(text: string) {
   return text
@@ -72,7 +78,12 @@ function textBlock({
     .join("")}</text>`;
 }
 
-export function buildCardSvg(persona: PersonaResult, source: "chatgpt" | "claude", backgroundDataUri: string) {
+export function buildCardSvg(
+  persona: PersonaResult,
+  source: MirrorCardSource,
+  backgroundDataUri: string,
+  logos: CardLogoData[] = [],
+) {
   const accent = paletteAccent[persona.colorFamily];
   const text = paletteText[persona.colorFamily];
   const muted = paletteMuted[persona.colorFamily];
@@ -89,6 +100,16 @@ export function buildCardSvg(persona: PersonaResult, source: "chatgpt" | "claude
         )}</text>
         </g>`,
     );
+  const sourceLogos = logos
+    .slice(0, 2)
+    .map(
+      (logo, index) =>
+        `<image href="${logo.href}" x="${TEXT_X + index * 42}" y="324" width="30" height="30" preserveAspectRatio="xMidYMid meet"><title>${esc(
+          logo.label,
+        )}</title></image>`,
+    )
+    .join("");
+  const labelX = TEXT_X + (logos.length ? Math.min(logos.length, 2) * 42 + 8 : 0);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <defs>
@@ -99,7 +120,8 @@ export function buildCardSvg(persona: PersonaResult, source: "chatgpt" | "claude
     </defs>
     <g clip-path="url(#cardClip)">
       <image href="${backgroundDataUri}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice" />
-      <text x="${TEXT_X}" y="346" font-size="25" font-weight="600" letter-spacing="5" font-family="Space Grotesk, Arial, Helvetica, sans-serif" fill="${accent}">${source.toUpperCase()} READ</text>
+      ${sourceLogos}
+      <text x="${labelX}" y="346" font-size="25" font-weight="600" letter-spacing="5" font-family="Space Grotesk, Arial, Helvetica, sans-serif" fill="${accent}">${cardSourceLabel(source)} READ</text>
       ${textBlock({
         text: persona.archetype.toUpperCase(),
         x: TEXT_X,

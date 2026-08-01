@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mirror - Vana Cup",
-  description: "Generate an AI persona card from your ChatGPT or Claude history.",
+  description: "Generate a persona card from your Spotify and YouTube habits.",
   icons: {
     icon: [{ url: "/LOGO.png", type: "image/png" }],
     shortcut: [{ url: "/LOGO.png", type: "image/png" }],

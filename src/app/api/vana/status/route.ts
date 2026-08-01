@@ -4,7 +4,7 @@ import { getVanaController } from "@/lib/vana/controller";
 
 const querySchema = z.object({
   requestId: z.string().min(1),
-  source: z.enum(["chatgpt", "claude"]).default("chatgpt"),
+  source: z.enum(["spotify", "youtube"]).default("spotify"),
 });
 
 export async function GET(req: Request) {

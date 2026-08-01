@@ -3,7 +3,7 @@ import { z } from "zod";
 import { renderCard } from "@/lib/card/render";
 
 const bodySchema = z.object({
-  source: z.enum(["chatgpt", "claude"]),
+  source: z.enum(["spotify", "youtube", "spotify-youtube"]),
   persona: z.object({
     archetype: z.string(),
     tagline: z.string(),

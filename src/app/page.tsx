@@ -28,10 +28,10 @@ export default function Home() {
       <section className="heroGrid">
         <div className="heroCopy">
           <p className="eyebrow">Vana Cup 2026</p>
-          <h1>What does your AI actually think of you?</h1>
+          <h1>What does your algorithm actually know about you?</h1>
           <p className="lede">
-            Connect your ChatGPT or Claude history and get a collectible persona card: specific, a little too honest,
-            and built from data you control.
+            Connect your Spotify, your YouTube, or both and get a collectible persona card built from what you actually
+            listen to and watch.
           </p>
           <HomeFlow />
         </div>

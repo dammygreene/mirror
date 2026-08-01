@@ -30,7 +30,7 @@ export function PalettePreview({ persona }: { persona: PersonaResult }) {
 
   return (
     <div className="palettePreview">
-      <PersonaCard persona={previewPersona} />
+      <PersonaCard persona={previewPersona} source="spotify-youtube" />
       <div className="paletteStrip previewPaletteStrip" aria-label="Card color family">
         {paletteNames.map((name) => (
           <button

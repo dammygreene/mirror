@@ -1,11 +1,29 @@
 ﻿import { Resvg } from "@resvg/resvg-js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { buildCardSvg } from "./template";
+import { buildCardSvg, type CardLogoData } from "./template";
 import { paletteFile } from "./palette";
 import type { PersonaResult } from "@/lib/persona/types";
+import type { MirrorCardSource } from "@/lib/vana/constants";
 
-export async function renderCard(persona: PersonaResult, source: "chatgpt" | "claude") {
+async function readLogoData(filename: string, label: string): Promise<CardLogoData | null> {
+  try {
+    const buffer = await readFile(path.join(process.cwd(), "public", filename));
+    return { href: `data:image/png;base64,${buffer.toString("base64")}`, label };
+  } catch {
+    return null;
+  }
+}
+
+async function getSourceLogos(source: MirrorCardSource) {
+  const logos = await Promise.all([
+    source !== "youtube" ? readLogoData("spotify.png", "Spotify") : Promise.resolve(null),
+    source !== "spotify" ? readLogoData("youtube.png", "YouTube") : Promise.resolve(null),
+  ]);
+  return logos.filter((logo): logo is CardLogoData => Boolean(logo));
+}
+
+export async function renderCard(persona: PersonaResult, source: MirrorCardSource) {
   const rel = paletteFile[persona.colorFamily];
   const bgPath = path.join(process.cwd(), "public", rel.replace(/^\//, ""));
   const frauncesPath = path.join(process.cwd(), "public", "fonts", "Fraunces.ttf");
@@ -15,7 +33,7 @@ export async function renderCard(persona: PersonaResult, source: "chatgpt" | "cl
   const bgBuffer = await readFile(bgPath);
   const bgDataUri = `data:image/png;base64,${bgBuffer.toString("base64")}`;
 
-  const svg = buildCardSvg(persona, source, bgDataUri);
+  const svg = buildCardSvg(persona, source, bgDataUri, await getSourceLogos(source));
   const png = new Resvg(svg, {
     fitTo: {
       mode: "width",

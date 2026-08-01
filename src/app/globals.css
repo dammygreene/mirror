@@ -194,6 +194,28 @@ input {
   transform: none;
 }
 
+.spotifyButton {
+  border-color: rgba(30, 215, 96, 0.44) !important;
+  background: #1ed760 !important;
+  color: #07170c !important;
+}
+
+.spotifyButton:hover {
+  border-color: rgba(30, 215, 96, 0.82) !important;
+  background: #26e86c !important;
+}
+
+.youtubeButton {
+  border-color: rgba(255, 0, 0, 0.44) !important;
+  background: #ff0000 !important;
+  color: #ffffff !important;
+}
+
+.youtubeButton:hover {
+  border-color: rgba(255, 64, 64, 0.82) !important;
+  background: #ff2a2a !important;
+}
+
 .landing,
 .subPage {
   position: relative;
@@ -412,6 +434,23 @@ p {
 
 .status.ok {
   color: #83e0b5;
+}
+
+.generatePanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
+
+.generatePanel p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .ticker {
@@ -780,7 +819,24 @@ p {
 }
 
 .cardSource {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   margin: 0 0 6px;
+}
+
+.sourceMarks {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sourceMarks img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  object-fit: contain;
 }
 
 .revealText {
@@ -1208,6 +1264,7 @@ p {
   }
 
   .ctaRow,
+  .generatePanel,
   .uploadActions,
   .shareBar {
     flex-direction: column;
@@ -1216,6 +1273,7 @@ p {
   }
 
   .ctaRow > *,
+  .generatePanel > *,
   .uploadActions > *,
   .shareBar > * {
     width: 100%;
@@ -1228,6 +1286,15 @@ p {
     white-space: normal;
     text-align: center;
     line-height: 1.15;
+  }
+
+  .generatePanel {
+    align-items: stretch;
+  }
+
+  .generatePanel p {
+    max-width: none;
+    text-align: center;
   }
 
   .ticker {

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { PersonaCard } from "@/components/PersonaCard";
 import { Button } from "@/components/ui/Button";
 import type { PersonaColorFamily, PersonaResult } from "@/lib/persona/types";
+import type { MirrorCardSource } from "@/lib/vana/constants";
 
 const paletteNames: PersonaColorFamily[] = ["crimson", "violet", "emerald", "amber", "cyan"];
 const paletteAccent: Record<PersonaColorFamily, string> = {
@@ -17,7 +18,7 @@ const paletteAccent: Record<PersonaColorFamily, string> = {
 
 type Props = {
   cardId: string;
-  source: "chatgpt" | "claude";
+  source: MirrorCardSource;
   persona: PersonaResult;
 };
 

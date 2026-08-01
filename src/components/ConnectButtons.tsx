@@ -5,13 +5,20 @@ import type { MirrorSource } from "@/lib/vana/constants";
 
 type Props = {
   onConnect: (source: MirrorSource) => void;
+  connected?: Partial<Record<MirrorSource, boolean>>;
+  busySource?: MirrorSource;
+  disabled?: boolean;
 };
 
-export function ConnectButtons({ onConnect }: Props) {
+export function ConnectButtons({ onConnect, connected = {}, busySource, disabled = false }: Props) {
   return (
     <div className="ctaRow">
-      <Button onClick={() => onConnect("chatgpt")}>Connect ChatGPT</Button>
-      <Button onClick={() => onConnect("claude")}>Connect Claude</Button>
+      <Button className="spotifyButton" onClick={() => onConnect("spotify")} disabled={disabled || busySource === "spotify"}>
+        {connected.spotify ? "Spotify connected" : "Connect Spotify"}
+      </Button>
+      <Button className="youtubeButton" onClick={() => onConnect("youtube")} disabled={disabled || busySource === "youtube"}>
+        {connected.youtube ? "YouTube connected" : "Connect YouTube"}
+      </Button>
     </div>
   );
 }

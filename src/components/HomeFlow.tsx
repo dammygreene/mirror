@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConnectButtons } from "@/components/ConnectButtons";
 import { ConnectionStatus, type MirrorFlowState } from "@/components/ConnectionStatus";
 import { LiveTicker } from "@/components/LiveTicker";
-import type { MirrorSource } from "@/lib/vana/constants";
+import { Button } from "@/components/ui/Button";
+import { cardSourceFromSources, hasTasteData, type MirrorSource, type NormalizedPayload } from "@/lib/vana/constants";
 
 const readReadyStatuses = new Set(["approved", "ready_for_read"]);
 const terminalFailureStatuses = new Set(["completed", "denied", "expired"]);
@@ -14,14 +15,30 @@ function flowError(reason: string) {
   return `that didn't work. ${reason}. try again`;
 }
 
+function dataCount(payload: NormalizedPayload) {
+  return payload.spotify?.savedTracks.length ?? payload.youtube?.history.length ?? 0;
+}
+
 export function HomeFlow() {
   const [state, setState] = useState<MirrorFlowState>("idle");
   const [error, setError] = useState<string>();
+  const [activeSource, setActiveSource] = useState<MirrorSource | "both">();
+  const [connectedData, setConnectedData] = useState<Partial<Record<MirrorSource, NormalizedPayload>>>({});
   const router = useRouter();
+
+  const connectedSources = useMemo(
+    () => (["spotify", "youtube"] as MirrorSource[]).filter((source) => connectedData[source]),
+    [connectedData],
+  );
+  const connected = {
+    spotify: Boolean(connectedData.spotify),
+    youtube: Boolean(connectedData.youtube),
+  };
 
   async function runConnectFlow(source: MirrorSource) {
     try {
       setError(undefined);
+      setActiveSource(source);
       setState("creating");
       const reqRes = await fetch("/api/vana/request", {
         method: "POST",
@@ -59,19 +76,34 @@ export function HomeFlow() {
       );
       const readJson = await readRes.json();
       if (!readRes.ok) throw new Error(readJson.error ?? "Read failed");
-      if (!Array.isArray(readJson.conversations) || readJson.conversations.length === 0) {
-        throw new Error("Vana returned no conversations");
-      }
+      if (dataCount(readJson) === 0) throw new Error(`Vana returned no ${source} data`);
 
+      setConnectedData((current) => ({ ...current, [source]: readJson }));
+      setState("idle");
+    } catch (err) {
+      setState("error");
+      setError(flowError(err instanceof Error ? err.message : "Flow failed"));
+    }
+  }
+
+  async function generateCard() {
+    try {
+      const input = {
+        sources: connectedSources,
+        spotify: connectedData.spotify?.spotify,
+        youtube: connectedData.youtube?.youtube,
+      };
+      if (!hasTasteData(input)) throw new Error("connect Spotify or YouTube first");
+
+      setError(undefined);
+      setActiveSource(connectedSources.length > 1 ? "both" : connectedSources[0]);
       setState("persona");
+      const sessionId = crypto.randomUUID();
+      const source = cardSourceFromSources(connectedSources);
       const personaRes = await fetch("/api/persona/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: reqJson.sessionId,
-          source,
-          conversations: readJson.conversations,
-        }),
+        body: JSON.stringify({ sessionId, ...input }),
       });
       const personaJson = await personaRes.json();
       if (!personaRes.ok) throw new Error(personaJson.error ?? "Persona failed");
@@ -81,7 +113,7 @@ export function HomeFlow() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: reqJson.sessionId,
+          sessionId,
           source,
           persona: personaJson.persona,
         }),
@@ -90,7 +122,7 @@ export function HomeFlow() {
       if (!renderRes.ok) throw new Error(renderJson.error ?? "Render failed");
 
       setState("ready");
-      router.push(`/result/${reqJson.sessionId}`);
+      router.push(`/result/${sessionId}`);
     } catch (err) {
       setState("error");
       setError(flowError(err instanceof Error ? err.message : "Flow failed"));
@@ -99,8 +131,25 @@ export function HomeFlow() {
 
   return (
     <>
-      <ConnectButtons onConnect={runConnectFlow} />
-      <ConnectionStatus state={state} error={error} />
+      <ConnectButtons
+        onConnect={runConnectFlow}
+        connected={connected}
+        busySource={state !== "idle" && activeSource !== "both" ? activeSource : undefined}
+        disabled={state !== "idle" && state !== "error"}
+      />
+      {connectedSources.length > 0 && (
+        <div className="generatePanel">
+          <Button type="button" onClick={generateCard} disabled={state !== "idle" && state !== "error"}>
+            Generate my card
+          </Button>
+          <p>
+            {connectedSources.length === 1
+              ? `Add ${connectedSources[0] === "spotify" ? "YouTube" : "Spotify"} too for a fuller read.`
+              : "Spotify and YouTube are both connected."}
+          </p>
+        </div>
+      )}
+      <ConnectionStatus state={state} error={error} activeSource={activeSource} />
       <LiveTicker />
     </>
   );

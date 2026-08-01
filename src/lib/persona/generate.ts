@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, type Schema } from "@google/genai";
 import { PERSONA_SYSTEM_PROMPT } from "./prompt";
 import { isValidPersonaResult, type PersonaResult } from "./types";
-import type { NormalizedPayload } from "@/lib/vana/constants";
+import type { PersonaEngineInput } from "@/lib/vana/constants";
 
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_DAILY_FREE_CAP = 1000;
@@ -41,29 +41,59 @@ export class PersonaRateLimitError extends Error {
   }
 }
 
-function fallbackPersona(payload: NormalizedPayload): PersonaResult {
-  const corpus = payload.conversations
-    .flatMap((c) => c.messages.map((m) => m.text.toLowerCase()))
-    .join(" ");
+function fallbackPersona(payload: PersonaEngineInput): PersonaResult {
+  const tracks = payload.spotify?.savedTracks ?? [];
+  const videos = payload.youtube?.history ?? [];
+  const corpus = [
+    ...tracks.flatMap((track) => [track.title, track.artist, track.genre]),
+    ...videos.flatMap((video) => [video.title, video.channel, video.category]),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
   const family = (["crimson", "violet", "emerald", "amber", "cyan"] as const)[corpus.length % 5];
   const energyScore = Math.min(100, Math.max(20, Math.floor((corpus.length % 81) + 20)));
+  const hasBoth = Boolean(tracks.length && videos.length);
   return {
-    archetype: payload.source === "claude" ? "The Thought Cartographer" : "The Prompt Loop Architect",
-    tagline: "Your AI sessions read like a sprint retro with plot twists.",
-    topObsessions: ["Iterating prompts", "Polishing outputs", "Chasing clarity"],
-    weirdPattern: "You keep revisiting old ideas until they become cleaner and sharper.",
+    archetype: hasBoth ? "The Crossfade Rabbit Hole" : tracks.length ? "The Replay Loop Oracle" : "The Midnight Queue Diver",
+    tagline: "Your algorithm knows exactly which mood you pretend is accidental.",
+    topObsessions: [
+      tracks[0]?.artist ?? videos[0]?.channel ?? "Recurring comfort picks",
+      tracks[1]?.genre ?? videos[1]?.category ?? "Niche loops",
+      videos[0]?.channel ?? tracks[1]?.artist ?? "Late-night pattern spirals",
+    ],
+    weirdPattern: hasBoth
+      ? "Your saved songs and watch history keep circling the same emotional weather from different angles."
+      : tracks.length
+        ? "Your saved tracks suggest you do not find a mood so much as move into it."
+        : "Your watch history has the unmistakable shape of one more video becoming a whole personality lane.",
     energyScore,
     colorFamily: family,
   };
 }
 
-function buildUserPrompt(payload: NormalizedPayload, strict: boolean) {
+function sampleItems<T>(items: T[], limit: number) {
+  if (items.length <= limit) return items;
+  const recent = items.slice(0, Math.ceil(limit * 0.65));
+  const spreadCount = limit - recent.length;
+  const step = Math.max(1, Math.floor((items.length - recent.length) / spreadCount));
+  const spread = items.slice(recent.length).filter((_, index) => index % step === 0).slice(0, spreadCount);
+  return [...recent, ...spread];
+}
+
+function buildUserPrompt(payload: PersonaEngineInput, strict: boolean) {
   const input = JSON.stringify({
-    source: payload.source,
-    conversations: payload.conversations.slice(0, 20).map((c) => ({
-      title: c.title,
-      messages: c.messages.slice(-25),
-    })),
+    sources: payload.sources,
+    spotify: payload.spotify
+      ? {
+          savedTracks: sampleItems(payload.spotify.savedTracks, 80),
+        }
+      : undefined,
+    youtube: payload.youtube
+      ? {
+          history: sampleItems(payload.youtube.history, 80),
+        }
+      : undefined,
   });
   if (!strict) return input;
   return `${input}\n\nSTRICT: Return only valid JSON matching the schema exactly. Use exactly three topObsessions and one allowed colorFamily.`;
@@ -89,7 +119,7 @@ function isRateLimitError(error: unknown) {
   return maybe.status === 429 || maybe.code === 429 || maybe.message?.includes("429") === true;
 }
 
-async function attemptGeminiPersona(ai: GoogleGenAI, payload: NormalizedPayload, strict: boolean) {
+async function attemptGeminiPersona(ai: GoogleGenAI, payload: PersonaEngineInput, strict: boolean) {
   recordGeminiRequest();
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL,
@@ -106,7 +136,7 @@ async function attemptGeminiPersona(ai: GoogleGenAI, payload: NormalizedPayload,
   return JSON.parse(text) as unknown;
 }
 
-export async function generatePersona(payload: NormalizedPayload): Promise<PersonaResult> {
+export async function generatePersona(payload: PersonaEngineInput): Promise<PersonaResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return fallbackPersona(payload);
 

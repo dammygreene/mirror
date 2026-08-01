@@ -3,18 +3,37 @@ import { z } from "zod";
 import { generatePersona, PersonaRateLimitError } from "@/lib/persona/generate";
 import { storeSession } from "@/lib/store/kv";
 
+const sourceSchema = z.enum(["spotify", "youtube"]);
+
 const bodySchema = z.object({
   sessionId: z.string().default(() => crypto.randomUUID()),
-  source: z.enum(["chatgpt", "claude"]),
-  conversations: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string().optional(),
-      messages: z.array(
-        z.object({ role: z.enum(["user", "assistant"]), text: z.string(), timestamp: z.string().optional() }),
+  sources: z.array(sourceSchema).min(1).max(2),
+  spotify: z
+    .object({
+      savedTracks: z.array(
+        z.object({
+          title: z.string(),
+          artist: z.string(),
+          genre: z.string().optional(),
+          addedAt: z.string().optional(),
+        }),
       ),
-    }),
-  ),
+    })
+    .optional(),
+  youtube: z
+    .object({
+      history: z.array(
+        z.object({
+          title: z.string(),
+          channel: z.string(),
+          category: z.string().optional(),
+          watchedAt: z.string().optional(),
+        }),
+      ),
+    })
+    .optional(),
+}).refine((data) => Boolean(data.spotify?.savedTracks.length || data.youtube?.history.length), {
+  message: "Connect Spotify or YouTube first",
 });
 
 export async function POST(req: Request) {
@@ -25,8 +44,9 @@ export async function POST(req: Request) {
   let persona;
   try {
     persona = await generatePersona({
-      source: parsed.data.source,
-      conversations: parsed.data.conversations,
+      sources: parsed.data.sources,
+      spotify: parsed.data.spotify,
+      youtube: parsed.data.youtube,
     });
   } catch (error) {
     if (error instanceof PersonaRateLimitError) {
@@ -37,8 +57,14 @@ export async function POST(req: Request) {
 
   await storeSession({
     sessionId: parsed.data.sessionId,
-    source: parsed.data.source,
-    conversations: parsed.data.conversations,
+    source: parsed.data.sources.includes("spotify") && parsed.data.sources.includes("youtube")
+      ? "spotify-youtube"
+      : parsed.data.sources[0],
+    input: {
+      sources: parsed.data.sources,
+      spotify: parsed.data.spotify,
+      youtube: parsed.data.youtube,
+    },
     persona,
     createdAt: new Date().toISOString(),
   });

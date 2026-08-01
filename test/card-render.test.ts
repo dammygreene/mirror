@@ -5,16 +5,16 @@ import { renderCard } from "../src/lib/card/render";
 test("renderCard returns png and svg", async () => {
   const result = await renderCard(
     {
-      archetype: "The 3AM Debugger",
-      tagline: "Always one more patch.",
-      topObsessions: ["Debugging", "Refactor", "Retries"],
-      weirdPattern: "Reopens solved tickets just to optimize naming.",
+      archetype: "The Velvet Rabbit Hole",
+      tagline: "Always one more replay.",
+      topObsessions: ["Synth nostalgia", "Tiny desk sets", "Late-night R&B"],
+      weirdPattern: "Turns every mood into a curated queue.",
       energyScore: 72,
       colorFamily: "amber",
     },
-    "chatgpt",
+    "spotify-youtube",
   );
 
-  assert.ok(result.svg.includes("THE 3AM DEBUGGER"));
+  assert.ok(result.svg.includes("THE VELVET RABBIT HOLE"));
   assert.ok(result.png.length > 1000);
 });
