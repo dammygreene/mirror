@@ -4,8 +4,8 @@ Mirror is a Vana Cup app that generates a shareable AI persona card from ChatGPT
 
 ## Features
 
-- ChatGPT connect flow via Vana request/status/read API routes
-- Claude manual export upload flow (`conversations.json`) with parser + schema mapping
+- ChatGPT connect flow via Vana request/status/read API routes (`chatgpt.conversations`)
+- Claude connect flow via Vana request/status/read API routes (`claude.conversations`)
 - Persona engine with Gemini integration and deterministic fallback
 - Server-side card renderer (SVG to PNG) using color-family templates
 - Result and permanent share pages with OG image endpoint
@@ -23,6 +23,7 @@ npm run dev
 
 - `GEMINI_API_KEY`
 - Vana app credentials (`VANA_APP_PRIVATE_KEY`, `VANA_APP_URL`, network setup)
+- Vana connector sources (`VANA_CHATGPT_CONNECTOR_SOURCE`, `VANA_CLAUDE_CONNECTOR_SOURCE`)
 - KV credentials for persistent production storage
 - Mainnet identity registration and escrow funding for production Vana reads/writes
 

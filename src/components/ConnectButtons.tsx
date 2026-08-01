@@ -1,16 +1,17 @@
 ﻿"use client";
 
 import { Button } from "@/components/ui/Button";
+import type { MirrorSource } from "@/lib/vana/constants";
 
 type Props = {
-  onConnectChatgpt: () => void;
+  onConnect: (source: MirrorSource) => void;
 };
 
-export function ConnectButtons({ onConnectChatgpt }: Props) {
+export function ConnectButtons({ onConnect }: Props) {
   return (
     <div className="ctaRow">
-      <Button onClick={onConnectChatgpt}>Connect ChatGPT</Button>
-      <Button href="/claude-upload">Connect Claude</Button>
+      <Button onClick={() => onConnect("chatgpt")}>Connect ChatGPT</Button>
+      <Button onClick={() => onConnect("claude")}>Connect Claude</Button>
     </div>
   );
 }
