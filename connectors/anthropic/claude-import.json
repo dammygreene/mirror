@@ -1,0 +1,6 @@
+{
+  "name": "claude-import",
+  "displayName": "Claude Manual Export",
+  "scopes": ["claude.conversations"],
+  "type": "manual-export"
+}

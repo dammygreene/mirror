@@ -1,0 +1,76 @@
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 1.25rem;">
+  <button onclick="setPalette('crimson')" id="btn-crimson" style="padding:6px 14px;font-size:13px;">Crimson</button>
+  <button onclick="setPalette('violet')" id="btn-violet" style="padding:6px 14px;font-size:13px;">Violet</button>
+  <button onclick="setPalette('emerald')" id="btn-emerald" style="padding:6px 14px;font-size:13px;">Emerald</button>
+  <button onclick="setPalette('amber')" id="btn-amber" style="padding:6px 14px;font-size:13px;">Amber</button>
+  <button onclick="setPalette('cyan')" id="btn-cyan" style="padding:6px 14px;font-size:13px;">Cyan</button>
+</div>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:2rem;display:flex;justify-content:center;">
+  <div id="card" style="width:300px;aspect-ratio:1080/1350;border-radius:16px;padding:24px;display:flex;flex-direction:column;box-sizing:border-box;transition:background 0.2s;">
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <i class="ti ti-sparkles" id="source-icon" style="font-size:16px;"></i>
+      <span style="font-size:12px;font-weight:500;letter-spacing:0.06em;" id="wordmark">MIRROR</span>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:20px 0;">
+      <div style="font-size:24px;font-weight:500;line-height:1.25;" id="archetype">The 3am debugger</div>
+      <div style="font-size:13px;font-style:italic;line-height:1.5;opacity:0.85;" id="tagline">you don't have insomnia, you have unresolved error handling</div>
+
+      <div style="margin-top:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.05em;margin-bottom:4px;opacity:0.75;">
+          <span>ENERGY</span><span id="energy-label">74</span>
+        </div>
+        <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.15);overflow:hidden;">
+          <div id="energy-bar" style="height:100%;width:74%;border-radius:3px;"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div style="font-size:10px;letter-spacing:0.05em;opacity:0.75;margin-bottom:6px;">TOP OBSESSIONS</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+          <div>debugging at odd hours</div>
+          <div>asking "why" four times in a row</div>
+          <div>half-finished side projects</div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px;font-size:11px;font-style:italic;line-height:1.5;opacity:0.9;">
+        "you asked it to explain the same regex six times"
+      </div>
+    </div>
+
+    <div style="font-size:9px;letter-spacing:0.04em;opacity:0.6;">mirror.app · vana cup 2026</div>
+  </div>
+</div>
+
+<script>
+const palettes = {
+  crimson: { bg: '#2b0f12', accent: '#e2544d', text: '#f7e7e5' },
+  violet:  { bg: '#1c1330', accent: '#8f7ae0', text: '#eee9fb' },
+  emerald: { bg: '#0e2318', accent: '#3fb681', text: '#e4f5ec' },
+  amber:   { bg: '#2a1c05', accent: '#e6a13a', text: '#faeed9' },
+  cyan:    { bg: '#0b2226', accent: '#3bc4d9', text: '#e2f7fa' }
+};
+
+function setPalette(name) {
+  const p = palettes[name];
+  const card = document.getElementById('card');
+  card.style.background = p.bg;
+  card.style.color = p.text;
+  document.getElementById('energy-bar').style.background = p.accent;
+  document.getElementById('source-icon').style.color = p.accent;
+  document.querySelectorAll('button').forEach(b => {
+    b.style.background = 'var(--surface-2)';
+    b.style.color = 'var(--text-primary)';
+    b.style.borderColor = 'var(--border)';
+  });
+  const activeBtn = document.getElementById('btn-' + name);
+  activeBtn.style.background = p.accent;
+  activeBtn.style.color = p.bg;
+  activeBtn.style.borderColor = p.accent;
+}
+
+setPalette('crimson');
+</script>
