@@ -220,6 +220,7 @@ input {
   isolation: isolate;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 32px max(32px, calc((100vw - 1180px) / 2));
   color: var(--ink);
@@ -672,6 +673,33 @@ p {
 
 .simpleTopBar {
   margin-bottom: 64px;
+}
+
+.returnPage {
+  display: flex;
+  flex-direction: column;
+}
+
+.returnContent {
+  display: grid;
+  max-width: 680px;
+  flex: 1;
+  align-content: center;
+  justify-items: start;
+  padding: 32px 0 96px;
+}
+
+.returnContent h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8vw, 92px);
+  font-weight: 600;
+  line-height: 0.94;
+}
+
+.returnContent .mirrorButton {
+  margin-top: 32px;
+  text-decoration: none;
 }
 
 .uploadGrid,

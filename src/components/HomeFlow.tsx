@@ -8,8 +8,11 @@ import { LiveTicker } from "@/components/LiveTicker";
 import { Button } from "@/components/ui/Button";
 import { cardSourceFromSources, hasTasteData, type MirrorSource, type NormalizedPayload } from "@/lib/vana/constants";
 
-const readReadyStatuses = new Set(["approved", "ready_for_read"]);
-const terminalFailureStatuses = new Set(["completed", "denied", "expired"]);
+const APPROVAL_POLL_INTERVAL_MS = 1500;
+const APPROVAL_VISIBLE_TIMEOUT_MS = 120000;
+
+const readReadyStatuses = new Set(["approved", "ready_for_read", "completed"]);
+const terminalFailureStatuses = new Set(["denied", "expired"]);
 
 function flowError(reason: string) {
   return `that didn't work. ${reason}. try again`;
@@ -52,6 +55,90 @@ export function HomeFlow() {
 
   async function runConnectFlow(source: MirrorSource, approvalTab: Window | null) {
     let approvalTabNavigated = false;
+    let visibleStartedAt =
+      typeof document !== "undefined" && document.visibilityState === "visible" ? Date.now() : null;
+    let visibleElapsedMs = 0;
+
+    const updateVisibleClock = () => {
+      if (typeof document === "undefined") return;
+
+      if (document.visibilityState === "visible") {
+        visibleStartedAt ??= Date.now();
+        return;
+      }
+
+      if (visibleStartedAt !== null) {
+        visibleElapsedMs += Date.now() - visibleStartedAt;
+        visibleStartedAt = null;
+      }
+    };
+
+    const currentVisibleElapsed = () =>
+      visibleElapsedMs + (visibleStartedAt === null ? 0 : Date.now() - visibleStartedAt);
+
+    const waitForNextApprovalCheck = () =>
+      new Promise<void>((resolve) => {
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        let settled = false;
+
+        const clearTimer = () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+          }
+        };
+
+        const cleanup = () => {
+          clearTimer();
+          if (typeof document === "undefined") return;
+          document.removeEventListener("visibilitychange", handleVisibilityWake);
+          window.removeEventListener("pageshow", finish);
+        };
+
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve();
+        };
+
+        const handleVisibilityWake = () => {
+          if (document.visibilityState === "visible") {
+            finish();
+            return;
+          }
+
+          clearTimer();
+        };
+
+        if (typeof document === "undefined") {
+          timeoutId = setTimeout(finish, APPROVAL_POLL_INTERVAL_MS);
+          return;
+        }
+
+        if (document.visibilityState === "visible") {
+          const remainingMs = Math.max(APPROVAL_VISIBLE_TIMEOUT_MS - currentVisibleElapsed(), 0);
+          timeoutId = setTimeout(finish, Math.min(APPROVAL_POLL_INTERVAL_MS, remainingMs));
+        }
+
+        document.addEventListener("visibilitychange", handleVisibilityWake);
+        window.addEventListener("pageshow", finish);
+      });
+
+    const checkApprovalStatus = async (requestId: string) => {
+      const statusRes = await fetch(
+        `/api/vana/status?source=${encodeURIComponent(source)}&requestId=${encodeURIComponent(requestId)}`,
+      );
+      const statusJson = await statusRes.json();
+      if (!statusRes.ok) throw new Error(statusJson.error ?? "Approval status check failed");
+      return statusJson.status;
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", updateVisibleClock);
+      window.addEventListener("pageshow", updateVisibleClock);
+    }
+
     try {
       if (!approvalTab) throw new Error("approval tab was blocked");
       setError(undefined);
@@ -71,22 +158,22 @@ export function HomeFlow() {
       setState("waiting");
 
       let readReady = false;
-      for (let i = 0; i < 80; i += 1) {
-        await new Promise((r) => setTimeout(r, 1500));
-        const statusRes = await fetch(
-          `/api/vana/status?source=${encodeURIComponent(source)}&requestId=${encodeURIComponent(reqJson.requestId)}`,
-        );
-        const statusJson = await statusRes.json();
-        if (!statusRes.ok) throw new Error(statusJson.error ?? "Approval status check failed");
-        if (readReadyStatuses.has(statusJson.status)) {
+      while (!readReady) {
+        await waitForNextApprovalCheck();
+        updateVisibleClock();
+
+        const status = await checkApprovalStatus(reqJson.requestId);
+        if (readReadyStatuses.has(status)) {
           readReady = true;
           break;
         }
-        if (terminalFailureStatuses.has(statusJson.status)) {
-          throw new Error(`approval ${statusJson.status}`);
+        if (terminalFailureStatuses.has(status)) {
+          throw new Error(`approval ${status}`);
+        }
+        if (currentVisibleElapsed() >= APPROVAL_VISIBLE_TIMEOUT_MS) {
+          throw new Error("approval timed out");
         }
       }
-      if (!readReady) throw new Error("approval timed out");
 
       setState("reading");
       const readRes = await fetch(
@@ -102,6 +189,11 @@ export function HomeFlow() {
       if (approvalTab && !approvalTabNavigated) approvalTab.close();
       setState("error");
       setError(flowError(err instanceof Error ? err.message : "Flow failed"));
+    } finally {
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", updateVisibleClock);
+        window.removeEventListener("pageshow", updateVisibleClock);
+      }
     }
   }
 
