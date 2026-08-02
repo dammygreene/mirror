@@ -38,4 +38,11 @@ test("generatePersona returns valid fallback shape", async () => {
   assert.ok(result.archetype.length > 0);
   assert.equal(result.topObsessions.length, 3);
   assert.ok(result.energyScore >= 0 && result.energyScore <= 100);
+  const generatedText = [
+    result.archetype,
+    result.tagline,
+    ...result.topObsessions,
+    result.weirdPattern,
+  ].join(" ").toLowerCase();
+  assert.doesNotMatch(generatedText, /\b(instagram|spotify|youtube|profile|data|sparse|limited|thin)\b/);
 });

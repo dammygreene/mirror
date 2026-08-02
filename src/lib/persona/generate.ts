@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type, type Schema } from "@google/genai";
 import { PERSONA_SYSTEM_PROMPT } from "./prompt";
 import { isValidPersonaResult, type PersonaResult } from "./types";
+import { listRecentCards } from "@/lib/store/kv";
 import type { PersonaEngineInput } from "@/lib/vana/constants";
 
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
@@ -61,7 +62,11 @@ function fallbackPersona(payload: PersonaEngineInput): PersonaResult {
     .toLowerCase();
   const family = (["crimson", "violet", "emerald", "amber", "cyan"] as const)[corpus.length % 5];
   const energyScore = Math.min(100, Math.max(20, Math.floor((corpus.length % 81) + 20)));
-  const hasMultiple = payload.sources.length > 1;
+  const followerGap = payload.instagram
+    ? Math.abs(payload.instagram.follower_count - payload.instagram.following_count)
+    : Math.abs((payload.spotify?.followers ?? 0) - (payload.spotify?.following ?? 0));
+  const hasQuietChannel = payload.youtube?.videoCount === 0 && Boolean(payload.youtube.joinedDate);
+  const hasText = Boolean(payload.instagram?.bio || payload.youtube?.description);
   const primaryName =
     payload.instagram?.username ??
     payload.youtube?.channelTitle ??
@@ -69,18 +74,30 @@ function fallbackPersona(payload: PersonaEngineInput): PersonaResult {
     tracks[0]?.artist ??
     videos[0]?.channel;
   return {
-    archetype: hasMultiple ? "The Cross-Platform Signal" : "The Public Profile Riddle",
+    archetype: payload.instagram?.is_private
+      ? "Velvet Lockbox"
+      : hasQuietChannel
+        ? "Quiet Archivist"
+        : hasText
+          ? "Curated Glitch"
+          : "Ratio Poet",
     tagline: payload.instagram?.is_private
-      ? "You keep the door mostly closed, but the handle still says plenty."
-      : "Your public signals are doing more character work than they admit.",
+      ? "You lock the door, then leave the best line visible in the window"
+      : hasQuietChannel
+        ? "You joined early, posted barely anything, and somehow made restraint the loudest move"
+        : followerGap > 100
+          ? "You treat attention like a budget, and the math is absolutely part of the outfit"
+          : "You give just enough away to make people overthink the rest",
     topObsessions: [
-      primaryName ?? "Surface-level signal",
-      payload.instagram?.bio ? "Bio-first self-editing" : payload.youtube?.description ? "Description-coded taste" : "Sparse profile clues",
-      payload.instagram?.is_private ? "Private-account energy" : hasMultiple ? "Cross-source contrast" : "Account-history posture",
+      primaryName ?? "Carefully chosen name",
+      payload.instagram?.is_private ? "Locked-door charisma" : hasQuietChannel ? "Loud restraint" : "Attention math",
+      hasText ? "Aesthetic breadcrumbing" : "Minimalist self-editing",
     ],
-    weirdPattern: hasMultiple
-      ? "The sharpest read is in the mismatch between what each platform is willing to show."
-      : "There is not much raw material here, which makes the few public choices carry extra weight.",
+    weirdPattern: payload.instagram?.is_private
+      ? "The private switch does not hide the performance; it just makes the visible parts feel more deliberate"
+      : hasQuietChannel
+        ? "The old join date paired with zero output reads less like absence and more like a long-running soft launch"
+        : "The follow math and naming choices suggest someone who edits the room before entering it",
     energyScore,
     colorFamily: family,
   };
@@ -95,7 +112,7 @@ function sampleItems<T>(items: T[], limit: number) {
   return [...recent, ...spread];
 }
 
-function buildUserPrompt(payload: PersonaEngineInput, strict: boolean) {
+function buildUserPrompt(payload: PersonaEngineInput, strict: boolean, avoidArchetypes: string[] = []) {
   const input = JSON.stringify({
     sources: payload.sources,
     spotify: payload.spotify
@@ -120,8 +137,11 @@ function buildUserPrompt(payload: PersonaEngineInput, strict: boolean) {
       : undefined,
     instagram: payload.instagram,
   });
-  if (!strict) return input;
-  return `${input}\n\nSTRICT: Return only valid JSON matching the schema exactly. Use exactly three topObsessions and one allowed colorFamily.`;
+  const repetitionNote = avoidArchetypes.length
+    ? `\n\nAVOID THESE RECENT ARCHETYPES AND THEIR NEAR-DUPLICATES: ${avoidArchetypes.join(", ")}. Create a materially different archetype and tagline structure for this person.`
+    : "";
+  if (!strict) return `${input}${repetitionNote}`;
+  return `${input}${repetitionNote}\n\nSTRICT: Return only valid JSON matching the schema exactly. Use exactly three topObsessions and one allowed colorFamily.`;
 }
 
 function recordGeminiRequest() {
@@ -144,13 +164,19 @@ function isRateLimitError(error: unknown) {
   return maybe.status === 429 || maybe.code === 429 || maybe.message?.includes("429") === true;
 }
 
-async function attemptGeminiPersona(ai: GoogleGenAI, payload: PersonaEngineInput, strict: boolean) {
+async function attemptGeminiPersona(
+  ai: GoogleGenAI,
+  payload: PersonaEngineInput,
+  strict: boolean,
+  avoidArchetypes: string[] = [],
+) {
   recordGeminiRequest();
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL,
-    contents: [{ role: "user", parts: [{ text: buildUserPrompt(payload, strict) }] }],
+    contents: [{ role: "user", parts: [{ text: buildUserPrompt(payload, strict, avoidArchetypes) }] }],
     config: {
       systemInstruction: PERSONA_SYSTEM_PROMPT,
+      temperature: 0.95,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
     },
@@ -161,12 +187,36 @@ async function attemptGeminiPersona(ai: GoogleGenAI, payload: PersonaEngineInput
   return JSON.parse(text) as unknown;
 }
 
+function normalizeArchetype(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function isRepeatedArchetype(archetype: string, recent: string[]) {
+  const normalized = normalizeArchetype(archetype);
+  return recent.some((item) => {
+    const other = normalizeArchetype(item);
+    return normalized === other || normalized.includes(other) || other.includes(normalized);
+  });
+}
+
+async function recentArchetypes() {
+  try {
+    const cards = await listRecentCards(10);
+    return cards
+      .map((card) => (card.persona as { archetype?: unknown }).archetype)
+      .filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 export async function generatePersona(payload: PersonaEngineInput): Promise<PersonaResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return fallbackPersona(payload);
 
   const ai = new GoogleGenAI({ apiKey: key });
   let parsed: unknown = null;
+  const avoidArchetypes = await recentArchetypes();
 
   try {
     parsed = await attemptGeminiPersona(ai, payload, false);
@@ -177,6 +227,15 @@ export async function generatePersona(payload: PersonaEngineInput): Promise<Pers
   if (!isValidPersonaResult(parsed)) {
     try {
       parsed = await attemptGeminiPersona(ai, payload, true);
+    } catch (error) {
+      if (isRateLimitError(error)) throw new PersonaRateLimitError();
+    }
+  }
+
+  if (isValidPersonaResult(parsed) && avoidArchetypes.length && isRepeatedArchetype(parsed.archetype, avoidArchetypes)) {
+    try {
+      const fresh = await attemptGeminiPersona(ai, payload, true, avoidArchetypes);
+      if (isValidPersonaResult(fresh)) parsed = fresh;
     } catch (error) {
       if (isRateLimitError(error)) throw new PersonaRateLimitError();
     }
