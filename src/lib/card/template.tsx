@@ -53,7 +53,7 @@ function textBlock({
   weight = 500,
   lineHeight = 1.12,
   transform = "",
-  family = "Fraunces 144pt, Fraunces, Georgia, serif",
+  family = "Fraunces, Georgia, serif",
   style = "normal",
 }: {
   text: string;
