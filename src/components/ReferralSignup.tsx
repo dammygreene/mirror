@@ -18,8 +18,8 @@ export function ReferralSignup({ cardId, sessionId, initialReferrer = null }: Pr
   const [saving, setSaving] = useState(false);
   const shareUrl = useMemo(() => {
     if (!referrer || typeof window === "undefined") return "";
-    return `${window.location.origin}/c/${cardId}?ref=${referrer.referralCode}`;
-  }, [cardId, referrer]);
+    return `${window.location.origin}/?ref=${referrer.referralCode}`;
+  }, [referrer]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,12 +45,12 @@ export function ReferralSignup({ cardId, sessionId, initialReferrer = null }: Pr
         <div>
           <p className="eyebrow">Leaderboard joined</p>
           <h2>@{referrer.handle}</h2>
-          <p>Share your card with this link. You get credit when someone new generates their own card.</p>
+          <p>Share this link. You get credit when someone new generates their own card.</p>
         </div>
         <div className="referralLink">{shareUrl}</div>
         <div className="shareBar">
           <Button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)}>
-            Copy referral link
+            Copy link
           </Button>
           <Button href="/leaderboard" className="secondaryButton">
             View leaderboard

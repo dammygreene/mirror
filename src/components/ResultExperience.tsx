@@ -26,10 +26,6 @@ export function ResultExperience({ cardId, source, persona }: Props) {
   const [colorFamily, setColorFamily] = useState<PersonaColorFamily>(persona.colorFamily);
   const [downloading, setDownloading] = useState(false);
   const selectedPersona = useMemo(() => ({ ...persona, colorFamily }), [persona, colorFamily]);
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${cardId}` : `/c/${cardId}`;
-  const shareText = encodeURIComponent("I generated my Mirror persona card on Vana Cup.");
-  const xUrl = `https://x.com/intent/post?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
-
   async function downloadSelected() {
     setDownloading(true);
     try {
@@ -59,18 +55,11 @@ export function ResultExperience({ cardId, source, persona }: Props) {
         <p className="eyebrow">Card generated</p>
         <h1>Your Mirror card is ready.</h1>
         <p className="lede">
-          Pick the color you want, download the PNG, share the permalink, or post it straight to X while the read still
-          feels suspiciously accurate.
+          Pick the color you want, download the PNG, then grab your referral link below if you want a spot on the board.
         </p>
         <div className="shareBar">
           <Button type="button" onClick={downloadSelected} disabled={downloading}>
             {downloading ? "Rendering PNG" : "Download selected PNG"}
-          </Button>
-          <Button type="button" className="secondaryButton" onClick={() => navigator.clipboard.writeText(shareUrl)}>
-            Copy Link
-          </Button>
-          <Button href={xUrl} target="_blank" rel="noreferrer" className="secondaryButton">
-            Share on X
           </Button>
         </div>
         <p className="helper">
