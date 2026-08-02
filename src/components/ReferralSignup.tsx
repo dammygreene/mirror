@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Referrer } from "@/lib/store/kv";
@@ -8,18 +8,15 @@ import type { Referrer } from "@/lib/store/kv";
 type Props = {
   cardId: string;
   sessionId: string;
-  initialReferrer?: Referrer | null;
+  referrer: Referrer | null;
+  referralUrl: string;
+  onReferrerChange: (referrer: Referrer) => void;
 };
 
-export function ReferralSignup({ cardId, sessionId, initialReferrer = null }: Props) {
+export function ReferralSignup({ cardId, sessionId, referrer, referralUrl, onReferrerChange }: Props) {
   const [handle, setHandle] = useState("");
-  const [referrer, setReferrer] = useState<Referrer | null>(initialReferrer);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const shareUrl = useMemo(() => {
-    if (!referrer || typeof window === "undefined") return "";
-    return `${window.location.origin}/?ref=${referrer.referralCode}`;
-  }, [referrer]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,7 +33,7 @@ export function ReferralSignup({ cardId, sessionId, initialReferrer = null }: Pr
       setError(json.error ?? "that handle did not work");
       return;
     }
-    setReferrer(json.referrer);
+    onReferrerChange(json.referrer);
   }
 
   if (referrer) {
@@ -47,9 +44,9 @@ export function ReferralSignup({ cardId, sessionId, initialReferrer = null }: Pr
           <h2>@{referrer.handle}</h2>
           <p>Share this link. You get credit when someone new generates their own card.</p>
         </div>
-        <div className="referralLink">{shareUrl}</div>
+        <div className="referralLink">{referralUrl}</div>
         <div className="shareBar">
-          <Button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)}>
+          <Button type="button" onClick={() => navigator.clipboard.writeText(referralUrl)}>
             Copy link
           </Button>
           <Button href="/leaderboard" className="secondaryButton">

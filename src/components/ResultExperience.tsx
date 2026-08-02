@@ -20,9 +20,10 @@ type Props = {
   cardId: string;
   source: MirrorCardSource;
   persona: PersonaResult;
+  referralUrl?: string;
 };
 
-export function ResultExperience({ cardId, source, persona }: Props) {
+export function ResultExperience({ cardId, source, persona, referralUrl = "" }: Props) {
   const [colorFamily, setColorFamily] = useState<PersonaColorFamily>(persona.colorFamily);
   const [downloading, setDownloading] = useState(false);
   const selectedPersona = useMemo(() => ({ ...persona, colorFamily }), [persona, colorFamily]);
@@ -60,6 +61,14 @@ export function ResultExperience({ cardId, source, persona }: Props) {
         <div className="shareBar">
           <Button type="button" onClick={downloadSelected} disabled={downloading}>
             {downloading ? "Rendering PNG" : "Download selected PNG"}
+          </Button>
+          <Button
+            type="button"
+            className="secondaryButton"
+            onClick={() => navigator.clipboard.writeText(referralUrl)}
+            disabled={!referralUrl}
+          >
+            Copy link
           </Button>
         </div>
         <p className="helper">

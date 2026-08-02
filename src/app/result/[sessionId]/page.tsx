@@ -1,8 +1,7 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ReferralSignup } from "@/components/ReferralSignup";
-import { ResultExperience } from "@/components/ResultExperience";
+import { ResultWithReferral } from "@/components/ResultWithReferral";
 import type { PersonaResult } from "@/lib/persona/types";
 import { getCardBySession, getReferrerBySession } from "@/lib/store/kv";
 
@@ -21,8 +20,13 @@ export default async function ResultPage({ params }: { params: Promise<{ session
           <span>MIRROR</span>
         </Link>
       </header>
-      <ResultExperience cardId={card.cardId} source={card.source} persona={persona} />
-      <ReferralSignup cardId={card.cardId} sessionId={sessionId} initialReferrer={referrer} />
+      <ResultWithReferral
+        cardId={card.cardId}
+        sessionId={sessionId}
+        source={card.source}
+        persona={persona}
+        initialReferrer={referrer}
+      />
     </main>
   );
 }
