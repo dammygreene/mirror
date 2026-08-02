@@ -10,6 +10,7 @@ import { cardSourceFromSources, hasTasteData, type MirrorSource, type Normalized
 
 const APPROVAL_POLL_INTERVAL_MS = 1500;
 const APPROVAL_VISIBLE_TIMEOUT_MS = 120000;
+const PENDING_VANA_REQUEST_KEY = "mirror:pending-vana-request";
 
 const readReadyStatuses = new Set(["approved", "ready_for_read", "completed"]);
 const terminalFailureStatuses = new Set(["denied", "expired"]);
@@ -153,6 +154,10 @@ export function HomeFlow() {
       if (!reqRes.ok) throw new Error(reqJson.error ?? "Failed to create request");
       if (!reqJson.requestId || !reqJson.approvalUrl) throw new Error("Vana did not return an approval URL");
 
+      window.localStorage.setItem(
+        PENDING_VANA_REQUEST_KEY,
+        JSON.stringify({ requestId: reqJson.requestId, source, startedAt: Date.now() }),
+      );
       approvalTab.location.href = reqJson.approvalUrl;
       approvalTabNavigated = true;
       setState("waiting");
@@ -185,10 +190,12 @@ export function HomeFlow() {
 
       setConnectedData((current) => ({ ...current, [source]: readJson }));
       setState("idle");
+      window.localStorage.removeItem(PENDING_VANA_REQUEST_KEY);
     } catch (err) {
       if (approvalTab && !approvalTabNavigated) approvalTab.close();
       setState("error");
       setError(flowError(err instanceof Error ? err.message : "Flow failed"));
+      window.localStorage.removeItem(PENDING_VANA_REQUEST_KEY);
     } finally {
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", updateVisibleClock);

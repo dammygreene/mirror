@@ -1,8 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { InteractiveBackground } from "@/components/InteractiveBackground";
+import { ReturnAutoClose } from "@/components/ReturnAutoClose";
 
-export default function ReturnPage() {
+type ReturnPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function flattenSearchParams(params: Record<string, string | string[] | undefined>) {
+  return Object.fromEntries(
+    Object.entries(params).flatMap(([key, value]) => {
+      if (typeof value === "string") return [[key, value]];
+      if (Array.isArray(value) && typeof value[0] === "string") return [[key, value[0]]];
+      return [];
+    }),
+  );
+}
+
+export default async function ReturnPage({ searchParams }: ReturnPageProps) {
+  const query = flattenSearchParams(await searchParams);
+
   return (
     <main className="subPage returnPage">
       <InteractiveBackground />
@@ -13,16 +30,7 @@ export default function ReturnPage() {
         </Link>
       </header>
 
-      <section className="returnContent" aria-labelledby="approval-title">
-        <p className="eyebrow">Vana approval</p>
-        <h1 id="approval-title">Approval received</h1>
-        <p className="lede">
-          Mirror will check your approval status as soon as the original tab is visible again.
-        </p>
-        <Link className="mirrorButton" href="/">
-          Return to app
-        </Link>
-      </section>
+      <ReturnAutoClose query={query} />
     </main>
   );
 }
