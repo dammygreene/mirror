@@ -3,6 +3,10 @@ import type { DirectDataController } from "@opendatalabs/vana-sdk/server";
 import { SOURCES, type MirrorSource } from "./constants";
 
 const sourceConfig = {
+  instagram: {
+    connectorSource: process.env.VANA_INSTAGRAM_CONNECTOR_SOURCE ?? "instagram",
+    scopes: [SOURCES.instagram],
+  },
   spotify: {
     connectorSource: process.env.VANA_SPOTIFY_CONNECTOR_SOURCE ?? "spotify",
     scopes: [SOURCES.spotify],

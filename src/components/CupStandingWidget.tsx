@@ -2,7 +2,13 @@ import Link from "next/link";
 import { getCupStanding } from "@/lib/store/kv";
 
 export async function CupStandingWidget() {
-  const standing = await getCupStanding();
+  const standing = await getCupStanding().catch(() => ({
+    rank: null,
+    goals: 0,
+    assists: 0,
+    points: 0,
+    updatedAt: "not posted",
+  }));
   const rank = standing.rank ? `#${standing.rank}` : "not posted";
 
   return (

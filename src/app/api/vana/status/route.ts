@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVanaController } from "@/lib/vana/controller";
+import { mirrorSourceSchema } from "@/lib/vana/schemas";
 
 const querySchema = z.object({
   requestId: z.string().min(1),
-  source: z.enum(["spotify", "youtube"]).default("spotify"),
+  source: mirrorSourceSchema.default("spotify"),
 });
 
 export async function GET(req: Request) {

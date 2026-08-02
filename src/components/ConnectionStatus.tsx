@@ -1,4 +1,5 @@
-﻿import { Spinner } from "@/components/ui/Spinner";
+import { Spinner } from "@/components/ui/Spinner";
+import type { MirrorSource } from "@/lib/vana/constants";
 
 export type MirrorFlowState =
   | "idle"
@@ -15,14 +16,15 @@ const copy: Record<Exclude<MirrorFlowState, "ready" | "error">, string> = {
   creating: "Opening the Vana handoff.",
   waiting: "Waiting for approval in the other tab.",
   reading: "Reading the patterns in your taste.",
-  persona: "Turning habits into a sharper persona.",
+  persona: "Turning profile signals into a sharper persona.",
   rendering: "Composing your card.",
 };
 
-function readingCopy(source?: "spotify" | "youtube" | "both") {
+function readingCopy(source?: MirrorSource | "multiple") {
+  if (source === "instagram") return "reading the public profile clues you left on purpose...";
   if (source === "spotify") return "reading your questionable 3am playlist choices...";
   if (source === "youtube") return "counting how many hours you've spent in one rabbit hole...";
-  if (source === "both") return "cross-checking your playlists against your rabbit holes...";
+  if (source === "multiple") return "cross-checking the platforms against each other...";
   return copy.reading;
 }
 
@@ -33,7 +35,7 @@ export function ConnectionStatus({
 }: {
   state: MirrorFlowState;
   error?: string;
-  activeSource?: "spotify" | "youtube" | "both";
+  activeSource?: MirrorSource | "multiple";
 }) {
   if (state === "ready") return <p className="status ok">Persona card ready.</p>;
   if (state === "error") return <p className="status err">{error ?? "Something broke."}</p>;

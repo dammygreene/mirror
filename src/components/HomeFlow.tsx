@@ -16,24 +16,39 @@ function flowError(reason: string) {
 }
 
 function dataCount(payload: NormalizedPayload) {
-  return payload.spotify?.savedTracks.length ?? payload.youtube?.history.length ?? 0;
+  if (payload.instagram || payload.youtube || payload.spotify) return 1;
+  return 0;
 }
+
+const allSources: MirrorSource[] = ["instagram", "youtube", "spotify"];
+
+const sourceNames: Record<MirrorSource, string> = {
+  instagram: "Instagram",
+  youtube: "YouTube",
+  spotify: "Spotify",
+};
+
+const addCopy: Record<MirrorSource, string> = {
+  instagram: "Add Instagram for bio, privacy, and social-posture clues.",
+  youtube: "Add YouTube too for channel history and description signals.",
+  spotify: "Add Spotify for another angle on public taste.",
+};
 
 export function HomeFlow() {
   const [state, setState] = useState<MirrorFlowState>("idle");
   const [error, setError] = useState<string>();
-  const [activeSource, setActiveSource] = useState<MirrorSource | "both">();
+  const [activeSource, setActiveSource] = useState<MirrorSource | "multiple">();
   const [connectedData, setConnectedData] = useState<Partial<Record<MirrorSource, NormalizedPayload>>>({});
   const router = useRouter();
 
   const connectedSources = useMemo(
-    () => (["spotify", "youtube"] as MirrorSource[]).filter((source) => connectedData[source]),
+    () => allSources.filter((source) => connectedData[source]),
     [connectedData],
   );
-  const connected = {
-    spotify: Boolean(connectedData.spotify),
-    youtube: Boolean(connectedData.youtube),
-  };
+  const unconnectedSources = allSources.filter((source) => !connectedData[source]);
+  const connected = Object.fromEntries(allSources.map((source) => [source, Boolean(connectedData[source])])) as Partial<
+    Record<MirrorSource, boolean>
+  >;
 
   async function runConnectFlow(source: MirrorSource, approvalTab: Window | null) {
     let approvalTabNavigated = false;
@@ -96,11 +111,12 @@ export function HomeFlow() {
         sources: connectedSources,
         spotify: connectedData.spotify?.spotify,
         youtube: connectedData.youtube?.youtube,
+        instagram: connectedData.instagram?.instagram,
       };
-      if (!hasTasteData(input)) throw new Error("connect Spotify or YouTube first");
+      if (!hasTasteData(input)) throw new Error("connect Instagram, YouTube, or Spotify first");
 
       setError(undefined);
-      setActiveSource(connectedSources.length > 1 ? "both" : connectedSources[0]);
+      setActiveSource(connectedSources.length > 1 ? "multiple" : connectedSources[0]);
       setState("persona");
       const sessionId = crypto.randomUUID();
       const source = cardSourceFromSources(connectedSources);
@@ -138,19 +154,28 @@ export function HomeFlow() {
       <ConnectButtons
         onConnect={runConnectFlow}
         connected={connected}
-        busySource={state !== "idle" && activeSource !== "both" ? activeSource : undefined}
+        busySource={state !== "idle" && activeSource !== "multiple" ? activeSource : undefined}
         disabled={state !== "idle" && state !== "error"}
       />
       {connectedSources.length > 0 && (
         <div className="generatePanel">
           <Button type="button" onClick={generateCard} disabled={state !== "idle" && state !== "error"}>
-            Generate my card
+            Generate my card now
           </Button>
-          <p>
-            {connectedSources.length === 1
-              ? `Add ${connectedSources[0] === "spotify" ? "YouTube" : "Spotify"} too for a fuller read.`
-              : "Spotify and YouTube are both connected."}
-          </p>
+          <div className="progressiveCopy">
+            <p>
+              {unconnectedSources.length
+                ? `Your card gets sharper with more sources. Connected: ${connectedSources.map((source) => sourceNames[source]).join(", ")}.`
+                : "All three sources are connected. This is the fullest read."}
+            </p>
+            {unconnectedSources.length > 0 && (
+              <ul>
+                {unconnectedSources.map((source) => (
+                  <li key={source}>{addCopy[source]}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
       <ConnectionStatus state={state} error={error} activeSource={activeSource} />

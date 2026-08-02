@@ -4,22 +4,27 @@ import path from "node:path";
 import { buildCardSvg, type CardLogoData } from "./template";
 import { paletteFile } from "./palette";
 import type { PersonaResult } from "@/lib/persona/types";
-import type { MirrorCardSource } from "@/lib/vana/constants";
+import { sourcesFromCardSource, type MirrorCardSource, type MirrorSource } from "@/lib/vana/constants";
 
 async function readLogoData(filename: string, label: string): Promise<CardLogoData | null> {
   try {
     const buffer = await readFile(path.join(process.cwd(), "public", filename));
-    return { href: `data:image/png;base64,${buffer.toString("base64")}`, label };
+    const mime = filename.endsWith(".svg") ? "image/svg+xml" : "image/png";
+    return { href: `data:${mime};base64,${buffer.toString("base64")}`, label };
   } catch {
     return null;
   }
 }
 
 async function getSourceLogos(source: MirrorCardSource) {
-  const logos = await Promise.all([
-    source !== "youtube" ? readLogoData("spotify.png", "Spotify") : Promise.resolve(null),
-    source !== "spotify" ? readLogoData("youtube.png", "YouTube") : Promise.resolve(null),
-  ]);
+  const logoFile: Record<MirrorSource, { filename: string; label: string }> = {
+    instagram: { filename: "instagram.svg", label: "Instagram" },
+    youtube: { filename: "youtube.png", label: "YouTube" },
+    spotify: { filename: "spotify.png", label: "Spotify" },
+  };
+  const logos = await Promise.all(
+    sourcesFromCardSource(source).map((item) => readLogoData(logoFile[item].filename, logoFile[item].label)),
+  );
   return logos.filter((logo): logo is CardLogoData => Boolean(logo));
 }
 

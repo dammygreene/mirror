@@ -45,6 +45,14 @@ function fallbackPersona(payload: PersonaEngineInput): PersonaResult {
   const tracks = payload.spotify?.savedTracks ?? [];
   const videos = payload.youtube?.history ?? [];
   const corpus = [
+    payload.instagram?.username,
+    payload.instagram?.full_name,
+    payload.instagram?.bio,
+    payload.youtube?.channelTitle,
+    payload.youtube?.description,
+    payload.youtube?.joinedDate,
+    payload.spotify?.display_name,
+    payload.spotify?.id,
     ...tracks.flatMap((track) => [track.title, track.artist, track.genre]),
     ...videos.flatMap((video) => [video.title, video.channel, video.category]),
   ]
@@ -53,20 +61,26 @@ function fallbackPersona(payload: PersonaEngineInput): PersonaResult {
     .toLowerCase();
   const family = (["crimson", "violet", "emerald", "amber", "cyan"] as const)[corpus.length % 5];
   const energyScore = Math.min(100, Math.max(20, Math.floor((corpus.length % 81) + 20)));
-  const hasBoth = Boolean(tracks.length && videos.length);
+  const hasMultiple = payload.sources.length > 1;
+  const primaryName =
+    payload.instagram?.username ??
+    payload.youtube?.channelTitle ??
+    payload.spotify?.display_name ??
+    tracks[0]?.artist ??
+    videos[0]?.channel;
   return {
-    archetype: hasBoth ? "The Crossfade Rabbit Hole" : tracks.length ? "The Replay Loop Oracle" : "The Midnight Queue Diver",
-    tagline: "Your algorithm knows exactly which mood you pretend is accidental.",
+    archetype: hasMultiple ? "The Cross-Platform Signal" : "The Public Profile Riddle",
+    tagline: payload.instagram?.is_private
+      ? "You keep the door mostly closed, but the handle still says plenty."
+      : "Your public signals are doing more character work than they admit.",
     topObsessions: [
-      tracks[0]?.artist ?? videos[0]?.channel ?? "Recurring comfort picks",
-      tracks[1]?.genre ?? videos[1]?.category ?? "Niche loops",
-      videos[0]?.channel ?? tracks[1]?.artist ?? "Late-night pattern spirals",
+      primaryName ?? "Surface-level signal",
+      payload.instagram?.bio ? "Bio-first self-editing" : payload.youtube?.description ? "Description-coded taste" : "Sparse profile clues",
+      payload.instagram?.is_private ? "Private-account energy" : hasMultiple ? "Cross-source contrast" : "Account-history posture",
     ],
-    weirdPattern: hasBoth
-      ? "Your saved songs and watch history keep circling the same emotional weather from different angles."
-      : tracks.length
-        ? "Your saved tracks suggest you do not find a mood so much as move into it."
-        : "Your watch history has the unmistakable shape of one more video becoming a whole personality lane.",
+    weirdPattern: hasMultiple
+      ? "The sharpest read is in the mismatch between what each platform is willing to show."
+      : "There is not much raw material here, which makes the few public choices carry extra weight.",
     energyScore,
     colorFamily: family,
   };
@@ -86,14 +100,25 @@ function buildUserPrompt(payload: PersonaEngineInput, strict: boolean) {
     sources: payload.sources,
     spotify: payload.spotify
       ? {
-          savedTracks: sampleItems(payload.spotify.savedTracks, 80),
+          id: payload.spotify.id,
+          display_name: payload.spotify.display_name,
+          followers: payload.spotify.followers,
+          following: payload.spotify.following,
+          savedTracks: payload.spotify.savedTracks ? sampleItems(payload.spotify.savedTracks, 80) : undefined,
         }
       : undefined,
     youtube: payload.youtube
       ? {
-          history: sampleItems(payload.youtube.history, 80),
+          channelTitle: payload.youtube.channelTitle,
+          joinedDate: payload.youtube.joinedDate,
+          description: payload.youtube.description,
+          subscriberCount: payload.youtube.subscriberCount,
+          videoCount: payload.youtube.videoCount,
+          country: payload.youtube.country,
+          history: payload.youtube.history ? sampleItems(payload.youtube.history, 80) : undefined,
         }
       : undefined,
+    instagram: payload.instagram,
   });
   if (!strict) return input;
   return `${input}\n\nSTRICT: Return only valid JSON matching the schema exactly. Use exactly three topObsessions and one allowed colorFamily.`;

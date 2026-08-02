@@ -30,8 +30,8 @@ export default function Home() {
           <p className="eyebrow">Vana Cup 2026</p>
           <h1>What does your algorithm actually know about you?</h1>
           <p className="lede">
-            Connect your Spotify, your YouTube, or both and get a collectible persona card built from what you actually
-            listen to and watch.
+            Connect Instagram, YouTube, Spotify, or all three and get a collectible persona card built from your real
+            public signals.
           </p>
           <HomeFlow />
         </div>

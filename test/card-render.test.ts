@@ -12,7 +12,7 @@ test("renderCard returns png and svg", async () => {
       energyScore: 72,
       colorFamily: "amber",
     },
-    "spotify-youtube",
+    "instagram-spotify-youtube",
   );
 
   assert.ok(result.svg.includes("THE VELVET RABBIT HOLE"));

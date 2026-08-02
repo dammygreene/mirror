@@ -101,15 +101,16 @@ export function buildCardSvg(
         </g>`,
     );
   const sourceLogos = logos
-    .slice(0, 2)
+    .slice(0, 3)
     .map(
       (logo, index) =>
-        `<image href="${logo.href}" x="${TEXT_X + index * 42}" y="324" width="30" height="30" preserveAspectRatio="xMidYMid meet"><title>${esc(
+        `<image href="${logo.href}" x="${TEXT_X + index * 34}" y="325" width="27" height="27" preserveAspectRatio="xMidYMid meet"><title>${esc(
           logo.label,
         )}</title></image>`,
     )
     .join("");
-  const labelX = TEXT_X + (logos.length ? Math.min(logos.length, 2) * 42 + 8 : 0);
+  const logoCount = Math.min(logos.length, 3);
+  const labelX = TEXT_X + (logoCount ? logoCount * 34 + 8 : 0);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <defs>

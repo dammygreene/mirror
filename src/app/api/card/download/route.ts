@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { renderCard } from "@/lib/card/render";
+import { mirrorCardSourceSchema } from "@/lib/vana/schemas";
 
 const bodySchema = z.object({
-  source: z.enum(["spotify", "youtube", "spotify-youtube"]),
+  source: mirrorCardSourceSchema,
   persona: z.object({
     archetype: z.string(),
     tagline: z.string(),

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVanaController, getVanaReturnUrl } from "@/lib/vana/controller";
+import { mirrorSourceSchema } from "@/lib/vana/schemas";
 
-const bodySchema = z.object({ source: z.enum(["spotify", "youtube"]).default("spotify") });
+const bodySchema = z.object({ source: mirrorSourceSchema.default("spotify") });
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => ({}));

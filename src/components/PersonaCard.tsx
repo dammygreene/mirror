@@ -5,7 +5,7 @@ import { useRef } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { paletteAccent, paletteFile, paletteMuted, paletteText } from "@/lib/card/palette";
 import type { PersonaResult } from "@/lib/persona/types";
-import { cardSourceLabel, type MirrorCardSource } from "@/lib/vana/constants";
+import { cardSourceLabel, sourcesFromCardSource, type MirrorCardSource, type MirrorSource } from "@/lib/vana/constants";
 
 type Props = {
   cardImageUrl?: string;
@@ -14,13 +14,12 @@ type Props = {
 };
 
 function sourceLogos(source: MirrorCardSource) {
-  if (source === "spotify-youtube") {
-    return [
-      { src: "/spotify.png", alt: "Spotify" },
-      { src: "/youtube.png", alt: "YouTube" },
-    ];
-  }
-  return source === "spotify" ? [{ src: "/spotify.png", alt: "Spotify" }] : [{ src: "/youtube.png", alt: "YouTube" }];
+  const logos: Record<MirrorSource, { src: string; alt: string }> = {
+    instagram: { src: "/instagram.svg", alt: "Instagram" },
+    youtube: { src: "/youtube.png", alt: "YouTube" },
+    spotify: { src: "/spotify.png", alt: "Spotify" },
+  };
+  return sourcesFromCardSource(source).map((item) => logos[item]);
 }
 
 export function PersonaCard({ cardImageUrl, persona, source = "spotify" }: Props) {

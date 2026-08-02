@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mirror - Vana Cup",
-  description: "Generate a persona card from your Spotify and YouTube habits.",
+  description: "Generate a persona card from your Instagram, YouTube, and Spotify signals.",
   icons: {
     icon: [{ url: "/LOGO.png", type: "image/png" }],
     shortcut: [{ url: "/LOGO.png", type: "image/png" }],

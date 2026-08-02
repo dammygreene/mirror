@@ -2,10 +2,11 @@
 import { z } from "zod";
 import { renderCard } from "@/lib/card/render";
 import { creditReferral, storeCard, getSession, storeSession } from "@/lib/store/kv";
+import { mirrorCardSourceSchema } from "@/lib/vana/schemas";
 
 const bodySchema = z.object({
   sessionId: z.string(),
-  source: z.enum(["spotify", "youtube", "spotify-youtube"]),
+  source: mirrorCardSourceSchema,
   persona: z.object({
     archetype: z.string(),
     tagline: z.string(),
