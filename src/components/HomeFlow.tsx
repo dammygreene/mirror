@@ -12,7 +12,7 @@ const APPROVAL_POLL_INTERVAL_MS = 1500;
 const APPROVAL_VISIBLE_TIMEOUT_MS = 120000;
 const PENDING_VANA_REQUEST_KEY = "mirror:pending-vana-request";
 
-const readReadyStatuses = new Set(["approved", "ready_for_read", "completed"]);
+const readReadyStatuses = new Set(["approved", "ready_for_read"]);
 const terminalFailureStatuses = new Set(["denied", "expired"]);
 
 function flowError(reason: string) {
@@ -56,6 +56,8 @@ export function HomeFlow() {
 
   async function runConnectFlow(source: MirrorSource, approvalTab: Window | null) {
     let approvalTabNavigated = false;
+    let lastApprovalWakeReason = "initial";
+    let readStarted = false;
     let visibleStartedAt =
       typeof document !== "undefined" && document.visibilityState === "visible" ? Date.now() : null;
     let visibleElapsedMs = 0;
@@ -78,7 +80,7 @@ export function HomeFlow() {
       visibleElapsedMs + (visibleStartedAt === null ? 0 : Date.now() - visibleStartedAt);
 
     const waitForNextApprovalCheck = () =>
-      new Promise<void>((resolve) => {
+      new Promise<"poll" | "pageshow" | "visibilitychange">((resolve) => {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         let settled = false;
 
@@ -93,37 +95,39 @@ export function HomeFlow() {
           clearTimer();
           if (typeof document === "undefined") return;
           document.removeEventListener("visibilitychange", handleVisibilityWake);
-          window.removeEventListener("pageshow", finish);
+          window.removeEventListener("pageshow", handlePageShow);
         };
 
-        const finish = () => {
+        const finish = (reason: "poll" | "pageshow" | "visibilitychange") => {
           if (settled) return;
           settled = true;
           cleanup();
-          resolve();
+          resolve(reason);
         };
 
         const handleVisibilityWake = () => {
           if (document.visibilityState === "visible") {
-            finish();
+            finish("visibilitychange");
             return;
           }
 
           clearTimer();
         };
 
+        const handlePageShow = () => finish("pageshow");
+
         if (typeof document === "undefined") {
-          timeoutId = setTimeout(finish, APPROVAL_POLL_INTERVAL_MS);
+          timeoutId = setTimeout(() => finish("poll"), APPROVAL_POLL_INTERVAL_MS);
           return;
         }
 
         if (document.visibilityState === "visible") {
           const remainingMs = Math.max(APPROVAL_VISIBLE_TIMEOUT_MS - currentVisibleElapsed(), 0);
-          timeoutId = setTimeout(finish, Math.min(APPROVAL_POLL_INTERVAL_MS, remainingMs));
+          timeoutId = setTimeout(() => finish("poll"), Math.min(APPROVAL_POLL_INTERVAL_MS, remainingMs));
         }
 
         document.addEventListener("visibilitychange", handleVisibilityWake);
-        window.addEventListener("pageshow", finish);
+        window.addEventListener("pageshow", handlePageShow);
       });
 
     const checkApprovalStatus = async (requestId: string) => {
@@ -164,7 +168,7 @@ export function HomeFlow() {
 
       let readReady = false;
       while (!readReady) {
-        await waitForNextApprovalCheck();
+        lastApprovalWakeReason = await waitForNextApprovalCheck();
         updateVisibleClock();
 
         const status = await checkApprovalStatus(reqJson.requestId);
@@ -175,18 +179,47 @@ export function HomeFlow() {
         if (terminalFailureStatuses.has(status)) {
           throw new Error(`approval ${status}`);
         }
+        if (status === "completed") {
+          throw new Error("approval already completed");
+        }
         if (currentVisibleElapsed() >= APPROVAL_VISIBLE_TIMEOUT_MS) {
           throw new Error("approval timed out");
         }
       }
 
       setState("reading");
+      if (readStarted) throw new Error("read already started for this request");
+      readStarted = true;
+      const readTrigger = `origin-${lastApprovalWakeReason}`;
+      console.info("[Mirror Vana completion] client read start", {
+        requestId: reqJson.requestId,
+        source,
+        trigger: readTrigger,
+        timestamp: new Date().toISOString(),
+      });
       const readRes = await fetch(
-        `/api/vana/read?source=${encodeURIComponent(source)}&requestId=${encodeURIComponent(reqJson.requestId)}`,
+        `/api/vana/read?source=${encodeURIComponent(source)}&requestId=${encodeURIComponent(
+          reqJson.requestId,
+        )}&trigger=${encodeURIComponent(readTrigger)}`,
       );
       const readJson = await readRes.json();
-      if (!readRes.ok) throw new Error(readJson.error ?? "Read failed");
+      if (!readRes.ok) {
+        console.error("[Mirror Vana completion] client read error", {
+          requestId: reqJson.requestId,
+          source,
+          trigger: readTrigger,
+          timestamp: new Date().toISOString(),
+          error: readJson.error ?? "Read failed",
+        });
+        throw new Error(readJson.error ?? "Read failed");
+      }
       if (dataCount(readJson) === 0) throw new Error(`Vana returned no ${source} data`);
+      console.info("[Mirror Vana completion] client read success", {
+        requestId: reqJson.requestId,
+        source,
+        trigger: readTrigger,
+        timestamp: new Date().toISOString(),
+      });
 
       setConnectedData((current) => ({ ...current, [source]: readJson }));
       setState("idle");

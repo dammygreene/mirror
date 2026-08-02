@@ -93,6 +93,12 @@ export function ReturnAutoClose({ query }: Props) {
       }
 
       try {
+        console.info("[Mirror Vana completion] return tab status-only check", {
+          requestId: pending.requestId,
+          source: pending.source,
+          trigger: "return-status-only",
+          timestamp: new Date().toISOString(),
+        });
         const res = await fetch(
           `/api/vana/status?source=${encodeURIComponent(pending.source)}&requestId=${encodeURIComponent(
             pending.requestId,
@@ -100,6 +106,13 @@ export function ReturnAutoClose({ query }: Props) {
         );
         const json = await res.json();
         if (!active) return;
+        console.info("[Mirror Vana completion] return tab status-only result", {
+          requestId: pending.requestId,
+          source: pending.source,
+          trigger: "return-status-only",
+          status: json.status,
+          timestamp: new Date().toISOString(),
+        });
         if (!res.ok) {
           setOutcome("returned");
           return;
